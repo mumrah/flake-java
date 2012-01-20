@@ -16,32 +16,36 @@ public class UniqueId {
         (byte)((clockSeqAndNode >> 8) & 0xff),
         (byte)((clockSeqAndNode >> 0) & 0xff),
     };
-    
+    private final ThreadLocal<ByteBuffer> tlbb = new ThreadLocal<ByteBuffer>() {
+        @Override
+        public ByteBuffer initialValue() {
+            return ByteBuffer.allocate(16);
+        }       
+    };
     private volatile short seq;
     private volatile long lastTimestamp;
     private final Object lock = new Object();
         
     public byte[] getId() {
+        if(seq == Short.MAX_VALUE) {
+            throw new RuntimeException("Too fast");
+        }
+        
         long time = 0;
         synchronized(lock) {
             time = System.currentTimeMillis();
             if(time != lastTimestamp) {
                 lastTimestamp = time;
-                System.err.println(Thread.currentThread().getId() + " " + seq);
                 seq = 0;
                 // We're cutting the range of seq in half by counting from zero
                 // but it makes for nicer looking IDs. Also, do we really expect
                 // to generate more than 32767 IDs on a single node in one 
                 // millisecond? Probably not.
             }
-            else {
-                if(seq == Short.MAX_VALUE) {
-                    throw new RuntimeException("Too fast");
-                }
-            }
             seq++;
         }
-        ByteBuffer bb = ByteBuffer.allocate(16);
+        ByteBuffer bb = tlbb.get();
+        bb.rewind();
         bb.putLong(time);
         bb.put(node);
         bb.putShort(seq);
