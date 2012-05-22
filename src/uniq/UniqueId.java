@@ -53,11 +53,22 @@ public class UniqueId {
         return bb.array();    
     }
 
+    public String getStringId() {
+      byte[] ba = getId();
+      ByteBuffer bb = ByteBuffer.wrap(ba);
+      long ts = bb.getLong();
+      int node_0 = bb.getInt();
+      short node_1 = bb.getShort();
+      short seq = bb.getShort();
+      return String.format("%016d-%s%s-%04d", ts, Integer.toHexString(node_0), Integer.toHexString(node_1), seq);
+    }
+
     public static void main(String[] args) throws IOException {
         UniqueId uid = new UniqueId();
         int n = Integer.parseInt(args[0]);
         for(int i=0; i<n; i++) {
-            System.out.write(uid.getId());
+            //System.out.write(uid.getId());
+            System.out.println(uid.getStringId());
         }
     }
 }
