@@ -1,5 +1,6 @@
 package uniq;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.eaio.uuid.UUIDGen;
@@ -52,10 +53,11 @@ public class UniqueId {
         return bb.array();    
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         UniqueId uid = new UniqueId();
-        while(true) {
-            System.out.println(uid.getId());
+        int n = Integer.parseInt(args[0]);
+        for(int i=0; i<n; i++) {
+            System.out.write(uid.getId());
         }
     }
 }

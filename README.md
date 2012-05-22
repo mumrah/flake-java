@@ -15,16 +15,41 @@ synchronization between machines.
 
 # Performance
 
-Single threaded:
+2011 MacBook Pro, 2.8Ghz i7
 
-    $ time java -cp .:./lib/uuid-3.2.1-SNAPSHOT.jar:./lib/commons-codec-1.6.jar:src uniq.UniqueId > out
-    
-    real        0m10.978s
-    user        0m6.234s
-    sys	        0m4.262s
-    
-    $ wc -l out 
-    516609 out
+## Cat to file
 
-My super scientific analysis yields approximately 50 ids per millisecond.
+    $ time java -cp .:./lib/uuid-3.2.1-SNAPSHOT.jar:./lib/commons-codec-1.6.jar:src uniq.UniqueId 10000000 > out
+    
+    real    0m18.498s
+    user    0m5.662s
+    sys     0m12.973s
+
+    $ ls -lh out
+    -rw-r--r--  1 mumrah  staff   153M May 22 10:52 out
+
+System I/O peaked at 8-8.5MB/s
+
+540 id/ms
+
+## Pipe to /dev/null
+
+    $ time java -cp .:./lib/uuid-3.2.1-SNAPSHOT.jar:./lib/commons-codec-1.6.jar:src uniq.UniqueId 10000000 > /dev/null
+
+    real    0m7.794s
+    user    0m4.688s
+    sys     0m3.253s
+
+1280 id/ms
+
+## Pipe to fifo, fifo to /dev/null
+
+    $ time java -cp .:./lib/uuid-3.2.1-SNAPSHOT.jar:./lib/commons-codec-1.6.jar:src uniq.UniqueId 10000000 > foo
+
+    real    0m18.051s
+    user    0m5.594s
+    sys     0m12.594s
+
+554 id/ms
+
 
