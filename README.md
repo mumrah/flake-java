@@ -1,7 +1,7 @@
 # Unique Id generator
 
 Based on http://blog.boundary.com/2012/01/12/Flake-A-decentralized-k-ordered-id-generation-service-in-Erlang.html
-which is in turn based on Twitter''s Snowflake project: http://engineering.twitter.com/2010/06/announcing-snowflake.html
+which is in turn based on Twitter's Snowflake project: http://engineering.twitter.com/2010/06/announcing-snowflake.html
 
 Generates unique ids based on the current epoch time, current machine identity,
 and a counter. The result are mostly ordered unique ids that require no
@@ -28,9 +28,11 @@ synchronization between machines.
     $ ls -lh out
     -rw-r--r--  1 mumrah  staff   153M May 22 10:52 out
 
-System I/O peaked at 8-8.5MB/s
-
 540 id/ms
+
+Since each id is 128 bits, the I/O rate comes out to 8640000 bytes per second, or 8.24 MB/s.
+Compare this to 66.59 MB/s which is the speed that the same system can "yes > omgyes". I guess that order of
+magnitude difference is the price of safety/synchronization.
 
 ## Pipe to /dev/null
 
