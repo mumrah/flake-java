@@ -1,6 +1,8 @@
 package uniq;
 
 import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import com.eaio.uuid.UUIDGen;
@@ -17,34 +19,32 @@ public class UniqueId {
         (byte)((clockSeqAndNode >> 8) & 0xff),
         (byte)((clockSeqAndNode >> 0) & 0xff),
     };
-    private final ThreadLocal<ByteBuffer> tlbb = new ThreadLocal<ByteBuffer>() {
-        @Override
-        public ByteBuffer initialValue() {
-            return ByteBuffer.allocate(16);
-        }       
-    };
 
     private volatile int seq;
     private volatile long lastTimestamp;
-    private final Object lock = new Object();
 
-    private final int maxShort = (int)0xffff;
+    private final ByteBuffer bb = ByteBuffer.allocate(16);
+    private final int min;
+    private final int max;
+
+    public UniqueId(int min, int max) {
+      this.min = min;
+      this.max = max;
+      System.err.println("Staring UniqueId[" + min + "," + max + "]");
+    }
         
-    public byte[] getId() {
-        if(seq == maxShort) {
-            throw new RuntimeException("Too fast");
+    public byte[] getId() throws InterruptedException {
+        if(seq >= max) {
+            System.err.println("Too fast");
+            Thread.sleep(1);
         }
         
-        long time;
-        synchronized(lock) {
-            time = System.currentTimeMillis();
-            if(time != lastTimestamp) {
-                lastTimestamp = time;
-                seq = 0;
-            }
-            seq++;
+        long time = System.currentTimeMillis();
+        if(time != lastTimestamp) {
+            lastTimestamp = time;
+            seq = min;
         }
-        ByteBuffer bb = tlbb.get();
+        seq++;
         bb.rewind();
         bb.putLong(time);
         bb.put(node);
@@ -52,6 +52,7 @@ public class UniqueId {
         return bb.array();    
     }
 
+    /*
     public String getStringId() {
       byte[] ba = getId();
       ByteBuffer bb = ByteBuffer.wrap(ba);
@@ -60,15 +61,40 @@ public class UniqueId {
       short node_1 = bb.getShort();
       short seq = bb.getShort();
       return String.format("%016d-%s%s-%04d", ts, Integer.toHexString(node_0), Integer.toHexString(node_1), seq);
+    }*/
+
+    public static Thread newThread(final int min, final int max, final int n) {
+      return new Thread(new Runnable(){
+        @Override
+        public void run() {
+          try {
+            UniqueId uid = new UniqueId(min, max);
+            OutputStream os = new FileOutputStream(Thread.currentThread().getId() + ".out");
+            long t0 = System.currentTimeMillis();
+            for(int i=0; i<n; i++) {
+              os.write(uid.getId());
+            }
+            long t1 = System.currentTimeMillis();
+            System.out.println(Thread.currentThread().getId() + " " + n + " " + (t1-t0));
+          } catch(IOException e) {
+
+          } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+          }
+        }
+      });
     }
 
     public static void main(String[] args) throws IOException {
-        UniqueId uid = new UniqueId();
         int n = Integer.parseInt(args[0]);
-        
-        for(int i=0; i<n; i++) {
-            System.out.write(uid.getId());
-            //System.out.println(uid.getStringId());
+        int m = Integer.parseInt(args[1]);
+        int max = 0xffff;
+        int step = max / m;
+        int x = 0;
+        for(int i=0; i<m; i++) {
+          newThread(x, x+step, n).start();
+          x += step;
         }
     }
 }
