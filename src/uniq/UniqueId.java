@@ -23,25 +23,24 @@ public class UniqueId {
             return ByteBuffer.allocate(16);
         }       
     };
-    private volatile short seq;
+
+    private volatile int seq;
     private volatile long lastTimestamp;
     private final Object lock = new Object();
+
+    private final int maxShort = (int)0xffff;
         
     public byte[] getId() {
-        if(seq == Short.MAX_VALUE) {
+        if(seq == maxShort) {
             throw new RuntimeException("Too fast");
         }
         
-        long time = 0;
+        long time;
         synchronized(lock) {
             time = System.currentTimeMillis();
             if(time != lastTimestamp) {
                 lastTimestamp = time;
                 seq = 0;
-                // We're cutting the range of seq in half by counting from zero
-                // but it makes for nicer looking IDs. Also, do we really expect
-                // to generate more than 32767 IDs on a single node in one 
-                // millisecond? Probably not.
             }
             seq++;
         }
@@ -49,7 +48,7 @@ public class UniqueId {
         bb.rewind();
         bb.putLong(time);
         bb.put(node);
-        bb.putShort(seq);
+        bb.putShort((short)seq);
         return bb.array();    
     }
 
@@ -66,9 +65,10 @@ public class UniqueId {
     public static void main(String[] args) throws IOException {
         UniqueId uid = new UniqueId();
         int n = Integer.parseInt(args[0]);
+        
         for(int i=0; i<n; i++) {
-            //System.out.write(uid.getId());
-            System.out.println(uid.getStringId());
+            System.out.write(uid.getId());
+            //System.out.println(uid.getStringId());
         }
     }
 }
