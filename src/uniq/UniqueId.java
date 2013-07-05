@@ -43,13 +43,13 @@ public class UniqueId {
                 seq = 0;
             }
             seq++;
+            ByteBuffer bb = tlbb.get();
+            bb.rewind();
+            bb.putLong(time);
+            bb.put(node);
+            bb.putShort((short)seq);
+            return bb.array();    			
         }
-        ByteBuffer bb = tlbb.get();
-        bb.rewind();
-        bb.putLong(time);
-        bb.put(node);
-        bb.putShort((short)seq);
-        return bb.array();    
     }
 
     public String getStringId() {
